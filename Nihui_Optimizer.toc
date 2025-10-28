@@ -1,0 +1,57 @@
+## Interface: 110205
+## Title: |cff00ff00Nihui|r |cffffffffOptimizer|r
+## Category: NihUI
+## Author: nihil
+## Notes: Gear optimization with immersive Narcissus-style interface
+## Version: 1.0.0
+## IconAtlas: GarrMission_MissionIcon-Provision
+## SavedVariables: NihuiOptimizerDB
+
+# Libraries
+libs\LibStub\LibStub.lua
+libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
+
+# Core files
+core\utils.lua
+core\uiparent_fade.lua
+core\movement_detector.lua
+core\worldframe_cleanup.lua
+
+# API (Camera, positioning, and animations)
+API\Camera.lua
+API\GuideLines.lua
+API\CameraPresets.lua
+API\Animations.lua
+API\AnimationManager.lua
+
+# UI Components (reusable)
+ui\components\custom_tooltip.lua
+ui\components\cursor_tooltip.lua
+ui\components\slot_tooltip.lua
+ui\components\slot_dropdown.lua
+ui\components\slot_context_menu.lua
+ui\components\slot_info_panel.lua
+ui\components\equipment_slots.lua
+ui\components\stats_panel.lua
+ui\components\chat_overlay.lua
+
+# UI Tabs (tab-specific logic with CONFIG)
+ui\tabs\equipment.lua
+ui\tabs\optimizer.lua
+ui\tabs\talents.lua
+ui\tabs\map.lua
+
+# UI Core
+ui\backdrop.lua
+ui\vignette_overlay.lua
+ui\minimap.lua
+ui\mainframe.lua
+
+# Config
+config\defaults.lua
+config\database.lua
+
+# Initialization
+init.lua
