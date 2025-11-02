@@ -25,6 +25,7 @@ API\GuideLines.lua
 API\CameraPresets.lua
 API\Animations.lua
 API\AnimationManager.lua
+API\TabRegistry.lua
 
 # UI Components (reusable)
 ui\components\custom_tooltip.lua
@@ -40,8 +41,6 @@ ui\components\chat_overlay.lua
 # UI Tabs (tab-specific logic with CONFIG)
 ui\tabs\equipment.lua
 ui\tabs\optimizer.lua
-ui\tabs\talents.lua
-ui\tabs\map.lua
 
 # UI Core
 ui\backdrop.lua
@@ -52,6 +51,9 @@ ui\mainframe.lua
 # Config
 config\defaults.lua
 config\database.lua
+
+# Public API (must be loaded after everything else)
+API\Public.lua
 
 # Initialization
 init.lua

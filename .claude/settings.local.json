@@ -1,16 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir \"E:\\Battle.net\\World of Warcraft\\_retail_\\Interface\\AddOns\")",
-      "Bash(findstr:*)",
-      "Bash(dir /s /b \"E:\\Battle.net\\World of Warcraft\\_retail_\\Interface\\AddOns\\Narcissus\\*.lua\")",
-      "Read(//e/Battle.net/World of Warcraft/_retail_/Interface/AddOns/Narcissus/**)",
-      "Read(//e/Battle.net/**)",
-      "Bash(find:*)",
-      "Bash(move \"E:\\Battle.net\\World of Warcraft\\_retail_\\Interface\\AddOns\\Nihui_Optimizer\\core\\camera.lua\" \"E:\\Battle.net\\World of Warcraft\\_retail_\\Interface\\AddOns\\Nihui_Optimizer\\API\\Camera.lua\")",
-      "Bash(dir \"E:\\Battle.net\\World of Warcraft\\_retail_\\Interface\\AddOns\" /b)",
-      "Bash(dir /s /b \"E:\\Battle.net\\World of Warcraft\\_retail_\\Interface\\AddOns\\Narcissus\\*.tga\")",
-      "Bash(dir:*)"
+      "Bash(for file in Camera.lua Animations.lua CameraPresets.lua)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(tail:*)"
     ],
     "deny": [],
     "ask": []

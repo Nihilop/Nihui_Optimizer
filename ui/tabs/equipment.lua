@@ -45,16 +45,21 @@ function E:CreateEquipmentTab(parent)
 	equipmentFrame:SetAllPoints(parent)
 	equipmentFrame:EnableMouse(true)  -- Block clicks to prevent interaction with UI below
 
-	-- Stats panel: Anchored to RIGHT edge (responsive height)
+	-- Stats panel: Anchored to RIGHT edge (auto height from content)
 	local statsFrame = CreateFrame("Frame", nil, parent)
 	statsFrame:SetWidth(CONFIG.stats.width)
+	-- Top anchor only - height will be set by stats panel itself
 	statsFrame:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -CONFIG.stats.marginRight, -CONFIG.stats.marginTop)
-	statsFrame:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -CONFIG.stats.marginRight, CONFIG.stats.marginBottom)
 	statsFrame:SetFrameLevel(equipmentFrame:GetFrameLevel() + 20)  -- Above blocker and slots
-	statsFrame:EnableMouse(true)  -- Allow hover on stats panel
+	statsFrame:EnableMouse(false)  -- Don't block mouse (stats panel will handle it)
 
 	-- Create equipment slots (from components)
 	self:CreateEquipmentSlots(equipmentFrame, CONFIG.equipment)
+
+	-- Update slots with equipped items
+	C_Timer.After(0.1, function()
+		self:UpdateEquipmentSlots()
+	end)
 
 	-- Create stats panel (from components)
 	self:CreateStatsPanel(statsFrame)

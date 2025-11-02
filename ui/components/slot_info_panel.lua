@@ -12,7 +12,7 @@ local SlotInfoPanel = E.SlotInfoPanel
 local CONFIG = {
 	panelWidth = 200,
 	panelHeight = 40,
-	offsetX = 2,  -- Distance from slot (très proche)
+	offsetX = 0,  -- Distance from slot (négatif = overlap pour compenser le style)
 }
 
 -- Create info panel for a slot

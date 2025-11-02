@@ -97,10 +97,33 @@ function E:OnAddonLoaded()
 	-- Initialize database
 	self:InitDatabase()
 
+	-- Enable experimental camera features ASAP (before popup appears)
+	C_CVar.SetCVar("ActionCam", "1")
+
 	print("|cff00ff00Nihui|r |cffffffffOptimizer|r loaded! Type /nihopt to toggle or use the minimap button.")
 end
 
 function E:OnPlayerLogin()
+	-- Force enable experimental camera again (in case it was reset)
+	C_CVar.SetCVar("ActionCam", "1")
+
+	-- Also set the CVar that controls the warning popup
+	C_CVar.SetCVar("ActionCamOn", "1")
+
+	-- Mark as already shown (this prevents the popup from appearing)
+	if not C_CVar.GetCVarBool("ActionCam") then
+		C_CVar.SetCVar("ActionCam", "1")
+		-- Simulate accepting the dialog
+		C_Timer.After(0.1, function()
+			if StaticPopup_Visible("ACTION_CAM_EXPERIMENTAL") then
+				local dialog = StaticPopup_FindVisible("ACTION_CAM_EXPERIMENTAL")
+				if dialog then
+					dialog.button1:Click()  -- Click "Accept" button
+				end
+			end
+		end)
+	end
+
 	-- Initialize minimap button
 	self:InitMinimapButton()
 
@@ -115,11 +138,33 @@ function E:OnPlayerLogin()
 		elseif msg == "debug" then
 			self:ToggleDebugWindow()
 			print("|cff00ff00Nihui Optimizer:|r Debug window toggled")
+		elseif msg == "showstats" then
+			-- Debug command: force show stats panel
+			if self.MainFrame and self.MainFrame.statsFrame then
+				local sf = self.MainFrame.statsFrame
+				sf:SetAlpha(1)
+				sf:Show()
+				print(string.format("|cff00ff00Nihui Optimizer:|r Stats panel forced visible (alpha=%.2f, shown=%s, width=%.0f, height=%.0f)",
+					sf:GetAlpha(), tostring(sf:IsShown()), sf:GetWidth(), sf:GetHeight()))
+
+				-- Also show the inner panel
+				if sf.statsPanel then
+					sf.statsPanel:SetAlpha(1)
+					sf.statsPanel:Show()
+					print(string.format("|cff00ff00Nihui Optimizer:|r Inner stats panel (alpha=%.2f, shown=%s, width=%.0f, height=%.0f)",
+						sf.statsPanel:GetAlpha(), tostring(sf.statsPanel:IsShown()), sf.statsPanel:GetWidth(), sf.statsPanel:GetHeight()))
+				else
+					print("|cffff0000Nihui Optimizer:|r statsFrame.statsPanel is NIL!")
+				end
+			else
+				print("|cffff0000Nihui Optimizer:|r MainFrame or statsFrame is NIL!")
+			end
 		elseif msg == "help" then
 			print("|cff00ff00Nihui Optimizer|r |cffffffffCommands:|r")
 			print("  /nihopt - Toggle main interface")
 			print("  /nihopt minimap - Toggle minimap button")
 			print("  /nihopt debug - Toggle debug window")
+			print("  /nihopt showstats - Debug: force show stats panel")
 			print("  /nihopt help - Show this help")
 		else
 			self:ToggleMainFrame()

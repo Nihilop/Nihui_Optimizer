@@ -244,17 +244,13 @@ function E:CreateMainFrame()
 	local tabSystem = CreateTabSystem(contentFrame)
 	frame.tabSystem = tabSystem
 
-	-- Create tabs
+	-- Create tabs (only core tabs, more can be added via TabRegistry API)
 	tabSystem:CreateTab("Equipment", 1)
 	tabSystem:CreateTab("Optimizer", 2)
-	tabSystem:CreateTab("Talents", 3)
-	tabSystem:CreateTab("Map", 4)
 
 	-- Create tab content frames
 	local equipmentTabContent = tabSystem:CreateTabContent()
 	local optimizerTabContent = tabSystem:CreateTabContent()
-	local talentsTabContent = tabSystem:CreateTabContent()
-	local mapTabContent = tabSystem:CreateTabContent()
 
 	-- Tab 1: Equipment view (character + stats) - uses ui/tabs/equipment.lua
 	local equipmentFrame, statsFrame = E:CreateEquipmentTab(equipmentTabContent)
@@ -265,36 +261,49 @@ function E:CreateMainFrame()
 	local optimizerPanel = E:CreateOptimizerTab(optimizerTabContent)
 	frame.optimizerPanel = optimizerPanel
 
-	-- Tab 3: Talents view (character on left, talent tree on right) - uses ui/tabs/talents.lua
-	local talentsContainer = E:CreateTalentsTab(talentsTabContent)
-	frame.talentsContainer = talentsContainer
-
-	-- Tab 4: Map view (character on right, world map on left) - uses ui/tabs/map.lua
-	local mapContainer = E:CreateMapTab(mapTabContent)
-	frame.mapContainer = mapContainer
-
 	-- Tab change handler (camera transitions)
 	tabSystem.onTabChanged = function(tabIndex)
+		-- Call cleanup for previous tab (if custom tabs have cleanup logic)
+		local previousTab = tabSystem.previousTab
+		if previousTab and tabSystem.tabCleanupCallbacks and tabSystem.tabCleanupCallbacks[previousTab] then
+			tabSystem.tabCleanupCallbacks[previousTab]()
+		end
+
+		-- Store current tab as previous for next change
+		tabSystem.previousTab = tabIndex
+
+		-- Show new tab (core tabs)
 		if tabIndex == 1 then
 			-- Equipment View: character on left/center
 			E:ShowEquipmentTab()
 		elseif tabIndex == 2 then
 			-- Optimizer View: character on right
 			E:ShowOptimizerTab()
-		elseif tabIndex == 3 then
-			-- Talents View: character on left, talent tree on right
-			E:ShowTalentsTab()
-		elseif tabIndex == 4 then
-			-- Map View: character on right, world map on left
-			E:ShowMapTab()
+		else
+			-- Custom tabs: call their show callback if registered
+			if tabSystem.tabShowCallbacks and tabSystem.tabShowCallbacks[tabIndex] then
+				tabSystem.tabShowCallbacks[tabIndex]()
+			end
 		end
 	end
 
-	-- Select first tab by default
-	tabSystem:SelectTab(1)
+	-- Initialize callback registries for custom tabs
+	tabSystem.tabShowCallbacks = {}
+	tabSystem.tabCleanupCallbacks = {}
+	tabSystem.tabPrepareCallbacks = {}
+	tabSystem.tabOnReadyCallbacks = {}
 
-	-- Store reference
+	-- Store reference BEFORE initializing custom tabs
 	self.MainFrame = frame
+
+	-- Initialize custom tabs registered via TabRegistry API
+	if E.TabRegistry then
+		E.TabRegistry:InitializeAllTabs()
+	end
+
+	-- Select first tab by default (after all tabs are created)
+	tabSystem.previousTab = nil  -- No previous tab initially
+	tabSystem:SelectTab(1)
 
 	-- Store equipment slots reference on main frame (created by tab)
 	frame.equipmentSlots = equipmentFrame.equipmentSlots
@@ -494,12 +503,11 @@ function E:ShowMainFrame()
 			optimizerPanel = frame.optimizerPanel,
 		})
 		self.CameraPresets:EnterLeftPanelView(false)  -- No animation
-	elseif activeTab == 3 then
-		-- Prepare Talents Tab
-		self.AnimationManager:PrepareTab({
-			talentsContainer = frame.talentsContainer,
-		})
-		self.CameraPresets:EnterRightPanelView(false)  -- No animation
+	else
+		-- Custom tabs: call their prepare callback if registered
+		if frame.tabSystem.tabPrepareCallbacks and frame.tabSystem.tabPrepareCallbacks[activeTab] then
+			frame.tabSystem.tabPrepareCallbacks[activeTab]()
+		end
 	end
 
 	-- STEP 2: Show vignette overlay (edge darkening effect like Narcissus)
@@ -546,18 +554,14 @@ function E:ShowMainFrame()
 			E.AnimationManager:AnimateTab(function()
 				E.AnimationManager:AnimateOptimizerTab(frame)
 			end)
-		elseif activeTab == 3 then
-			E.AnimationManager:AnimateTab(function()
-				-- Talents tab has its own animation in ShowTalentsTab()
-				-- Just release the lock here
+		else
+			-- Custom tabs: call their onReady callback if registered
+			if frame.tabSystem.tabOnReadyCallbacks and frame.tabSystem.tabOnReadyCallbacks[activeTab] then
+				frame.tabSystem.tabOnReadyCallbacks[activeTab]()
+			else
+				-- No custom callback, just release the transition lock
 				E.AnimationManager.isTransitioning = false
-			end)
-		elseif activeTab == 4 then
-			E.AnimationManager:AnimateTab(function()
-				-- Map tab has its own animation in ShowMapTab()
-				-- Just release the lock here
-				E.AnimationManager.isTransitioning = false
-			end)
+			end
 		end
 	end
 
@@ -587,14 +591,23 @@ function E:HideMainFrame()
 		self.DebugWindow:Hide()
 	end
 
-	-- Cleanup talents tab (restore Blizzard talent frame)
-	if self.CleanupTalentsTab then
-		self:CleanupTalentsTab()
-	end
+	-- Cleanup custom tabs (if they registered cleanup callbacks)
+	if self.MainFrame and self.MainFrame.tabSystem then
+		local tabSystem = self.MainFrame.tabSystem
 
-	-- Cleanup map tab (restore Blizzard map frame)
-	if self.HideMapTab then
-		self:HideMapTab()
+		-- Call onHide callbacks
+		if tabSystem.tabCleanupCallbacks then
+			for tabIndex, cleanupCallback in pairs(tabSystem.tabCleanupCallbacks) do
+				cleanupCallback()
+			end
+		end
+
+		-- Call full cleanup (onCleanup) callbacks
+		if tabSystem.tabFullCleanupCallbacks then
+			for tabIndex, cleanupCallback in pairs(tabSystem.tabFullCleanupCallbacks) do
+				cleanupCallback()
+			end
+		end
 	end
 
 	-- STEP 1: Hide vignette overlay FIRST

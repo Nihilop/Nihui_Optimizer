@@ -1,10 +1,49 @@
 local _, ns = ...
 local E = ns.E
 
--- Create a stat row with optional tooltip
+-- ========================================
+-- STATS PANEL CONFIG (Minimal Modern Style)
+-- ========================================
+local CONFIG = {
+	-- Gradient settings (transparent left → black right)
+	gradient = {
+		enabled = true,
+		startAlpha = 0.0,   -- Fully transparent on left
+		endAlpha = 0.85,    -- Dark on right (85% opacity)
+		startOffset = 0.3,  -- Start gradient at 30% from left
+	},
+
+	-- Font settings
+	fonts = {
+		statLabel = {font = "Fonts\\FRIZQT__.TTF", size = 13, flags = ""},
+		statValue = {font = "Fonts\\FRIZQT__.TTF", size = 13, flags = "OUTLINE"},
+		sectionTitle = {font = "Fonts\\FRIZQT__.TTF", size = 11, flags = ""},
+	},
+
+	-- Colors
+	colors = {
+		statLabel = {0.7, 0.7, 0.7, 1},
+		statValue = {1, 1, 1, 1},
+		sectionTitle = {0, 1, 0, 0.6},  -- Nihui green, subtle
+	},
+
+	-- Spacing
+	spacing = {
+		topMargin = 20,
+		rowHeight = 24,
+		sectionGap = 12,  -- Extra gap between sections
+		leftPadding = 20,
+		rightPadding = 20,
+	},
+}
+
+-- Create a stat row (minimal style - no background)
 local function CreateStatRow(parent, label, yOffset, tooltipInfo)
 	local row = CreateFrame("Frame", nil, parent)
-	row:SetSize(280, 20)
+	-- Use anchors instead of fixed width for responsiveness
+	row:SetHeight(CONFIG.spacing.rowHeight)
+	row:SetPoint("LEFT", parent, "LEFT", CONFIG.spacing.leftPadding, 0)
+	row:SetPoint("RIGHT", parent, "RIGHT", -CONFIG.spacing.rightPadding, 0)
 	row:SetPoint("TOP", parent, "TOP", 0, yOffset)
 
 	-- Enable mouse for tooltip
@@ -23,19 +62,47 @@ local function CreateStatRow(parent, label, yOffset, tooltipInfo)
 	end
 
 	local labelText = row:CreateFontString(nil, "OVERLAY")
-	labelText:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
-	labelText:SetPoint("LEFT", row, "LEFT", 10, 0)
-	labelText:SetTextColor(0.8, 0.8, 0.8, 1)
+	labelText:SetFont(CONFIG.fonts.statLabel.font, CONFIG.fonts.statLabel.size, CONFIG.fonts.statLabel.flags)
+	labelText:SetPoint("LEFT", row, "LEFT", 0, 0)
+	labelText:SetTextColor(unpack(CONFIG.colors.statLabel))
 	labelText:SetText(label)
 	row.label = labelText
 
 	local valueText = row:CreateFontString(nil, "OVERLAY")
-	valueText:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
-	valueText:SetPoint("RIGHT", row, "RIGHT", -10, 0)
-	valueText:SetTextColor(1, 1, 1, 1)
+	valueText:SetFont(CONFIG.fonts.statValue.font, CONFIG.fonts.statValue.size, CONFIG.fonts.statValue.flags)
+	valueText:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+	valueText:SetTextColor(unpack(CONFIG.colors.statValue))
 	row.value = valueText
 
 	return row
+end
+
+-- Create a section separator (subtle line)
+local function CreateSectionTitle(parent, yOffset, title)
+	local section = CreateFrame("Frame", nil, parent)
+	section:SetHeight(16)
+	section:SetPoint("LEFT", parent, "LEFT", CONFIG.spacing.leftPadding, 0)
+	section:SetPoint("RIGHT", parent, "RIGHT", -CONFIG.spacing.rightPadding, 0)
+	section:SetPoint("TOP", parent, "TOP", 0, yOffset)
+
+	-- Subtle line
+	local line = section:CreateTexture(nil, "ARTWORK")
+	line:SetColorTexture(unpack(CONFIG.colors.sectionTitle))
+	line:SetHeight(1)
+	line:SetPoint("LEFT", section, "LEFT", 0, 0)
+	line:SetPoint("RIGHT", section, "RIGHT", 0, 0)
+
+	-- Optional: section title text (if you want labels like "Secondary Stats")
+	if title then
+		local text = section:CreateFontString(nil, "OVERLAY")
+		text:SetFont(CONFIG.fonts.sectionTitle.font, CONFIG.fonts.sectionTitle.size, CONFIG.fonts.sectionTitle.flags)
+		text:SetPoint("LEFT", section, "LEFT", 0, -8)
+		text:SetTextColor(unpack(CONFIG.colors.sectionTitle))
+		text:SetText(title)
+		text:SetAlpha(0.6)
+	end
+
+	return section
 end
 
 -- Update character stats
@@ -115,116 +182,118 @@ local function UpdateStats(panel)
 end
 
 function E:CreateStatsPanel(parent)
-	local panel = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-	panel:SetAllPoints(parent)
+	local panel = CreateFrame("Frame", nil, parent)
+	-- Match parent width, but height will be set dynamically
+	panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
+	panel:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
 
-	-- Create simple backdrop
-	E:CreateSimpleBackdrop(panel, 0.9)
+	print("[StatsPanel] Creating stats panel, parent:", parent:GetName() or "anonymous")
 
-	-- Character name
-	local charName = panel:CreateFontString(nil, "OVERLAY")
-	charName:SetFont("Fonts\\FRIZQT__.TTF", 18, "OUTLINE")
-	charName:SetPoint("TOP", panel, "TOP", 0, -10)
-	charName:SetTextColor(1, 1, 1, 1)
-	charName:SetText(UnitName("player"))
-	panel.charName = charName
+	-- Create gradient background (transparent → black)
+	if CONFIG.gradient.enabled then
+		local gradient = panel:CreateTexture(nil, "BACKGROUND")
+		gradient:SetAllPoints(panel)
 
-	-- Level and spec
-	local levelSpec = panel:CreateFontString(nil, "OVERLAY")
-	levelSpec:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
-	levelSpec:SetPoint("TOP", charName, "BOTTOM", 0, -4)
-	levelSpec:SetTextColor(0.8, 0.8, 0.8, 1)
+		-- Create gradient effect (horizontal: transparent left → dark right)
+		-- Note: SetGradient uses RGB + alpha separately in some WoW versions
+		gradient:SetGradient("HORIZONTAL",
+			{r = 0, g = 0, b = 0, a = CONFIG.gradient.startAlpha},  -- Left: transparent
+			{r = 0, g = 0, b = 0, a = CONFIG.gradient.endAlpha}     -- Right: dark
+		)
 
-	local level = UnitLevel("player")
-	local specIndex = GetSpecialization()
-	local specName = specIndex and select(2, GetSpecializationInfo(specIndex)) or "No Spec"
-	levelSpec:SetText(string.format("Level %d %s", level, specName))
-	panel.levelSpec = levelSpec
+		print(string.format("[StatsPanel] Gradient created: startAlpha=%.2f, endAlpha=%.2f",
+			CONFIG.gradient.startAlpha, CONFIG.gradient.endAlpha))
+	end
 
-	-- Divider
-	local divider = panel:CreateTexture(nil, "ARTWORK")
-	divider:SetColorTexture(0.3, 0.3, 0.3, 1)
-	divider:SetHeight(1)
-	divider:SetPoint("TOPLEFT", levelSpec, "BOTTOMLEFT", -20, -8)
-	divider:SetPoint("TOPRIGHT", levelSpec, "BOTTOMRIGHT", 20, -8)
-
-	-- Title
-	local title = panel:CreateFontString(nil, "OVERLAY")
-	title:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
-	title:SetPoint("TOP", divider, "BOTTOM", 0, -10)
-	title:SetTextColor(0, 1, 0, 1)
-	title:SetText("Stats")
-	panel.title = title
+	-- Calculate content height dynamically
+	local yOffset = -CONFIG.spacing.topMargin
+	local rowHeight = CONFIG.spacing.rowHeight
 
 	-- Create stat rows
 	panel.stats = {}
-	local yOffset = -45
-	local rowHeight = -30
 
-	-- Item Level
+	-- PRIMARY STATS (no section title, just stats)
 	panel.stats.ilvl = CreateStatRow(panel, "Item Level", yOffset)
-	yOffset = yOffset + rowHeight
+	yOffset = yOffset - rowHeight
 
-	-- Primary Stat
 	panel.stats.primary = CreateStatRow(panel, "Primary Stat", yOffset)
-	yOffset = yOffset + rowHeight
+	yOffset = yOffset - rowHeight
 
-	-- Stamina
 	panel.stats.stamina = CreateStatRow(panel, "Endurance", yOffset, {
 		title = "Endurance",
 		description = "Augmente les points de vie maximum de votre personnage. Chaque point d'endurance augmente vos PV d'environ 20."
 	})
-	yOffset = yOffset + rowHeight
+	yOffset = yOffset - rowHeight
 
-	-- Separator
-	yOffset = yOffset + rowHeight / 2
+	-- Section separator
+	yOffset = yOffset - CONFIG.spacing.sectionGap
+	CreateSectionTitle(panel, yOffset, nil)  -- No title, just a line
+	yOffset = yOffset - 16
 
-	-- Secondary Stats
+	-- SECONDARY STATS
 	panel.stats.crit = CreateStatRow(panel, "Coup critique", yOffset, {
 		title = "Coup critique",
 		description = "Augmente les chances que vos attaques et sorts infligent des dégâts critiques (200% des dégâts normaux). Également utile pour le Heal."
 	})
-	yOffset = yOffset + rowHeight
+	yOffset = yOffset - rowHeight
 
 	panel.stats.haste = CreateStatRow(panel, "Hâte", yOffset, {
 		title = "Hâte",
 		description = "Réduit le temps de recharge de vos sorts et augmente la vitesse d'attaque. Réduit également le temps de recharge global (GCD)."
 	})
-	yOffset = yOffset + rowHeight
+	yOffset = yOffset - rowHeight
 
 	panel.stats.mastery = CreateStatRow(panel, "Maîtrise", yOffset, {
 		title = "Maîtrise",
 		description = "Bonus unique à votre spécialisation. L'effet varie selon votre classe et spé. Consultez votre livre de sorts pour les détails."
 	})
-	yOffset = yOffset + rowHeight
+	yOffset = yOffset - rowHeight
 
 	panel.stats.versatility = CreateStatRow(panel, "Polyvalence", yOffset, {
 		title = "Polyvalence",
 		description = "Augmente tous les dégâts et soins infligés. Réduit également les dégâts subis. Stat équilibrée et toujours utile."
 	})
-	yOffset = yOffset + rowHeight
+	yOffset = yOffset - rowHeight
 
-	-- Separator
-	yOffset = yOffset + rowHeight / 2
+	-- Section separator
+	yOffset = yOffset - CONFIG.spacing.sectionGap
+	CreateSectionTitle(panel, yOffset, nil)
+	yOffset = yOffset - 16
 
-	-- Tertiary Stats
+	-- TERTIARY STATS
 	panel.stats.speed = CreateStatRow(panel, "Vitesse", yOffset, {
 		title = "Vitesse",
 		description = "Augmente votre vitesse de déplacement. N'affecte pas la vitesse de combat."
 	})
-	yOffset = yOffset + rowHeight
+	yOffset = yOffset - rowHeight
 
 	panel.stats.leech = CreateStatRow(panel, "Ponction", yOffset, {
 		title = "Ponction",
 		description = "Restaure des points de vie en pourcentage des dégâts et soins effectués. Excellent pour la survie en solo."
 	})
-	yOffset = yOffset + rowHeight
+	yOffset = yOffset - rowHeight
 
 	panel.stats.avoidance = CreateStatRow(panel, "Évitement", yOffset, {
 		title = "Évitement",
 		description = "Réduit les dégâts de zone (AoE) subis. Utile dans les donjons et raids avec beaucoup de dégâts de zone."
 	})
+	yOffset = yOffset - rowHeight
 
+	-- Set panel height to fit content exactly
+	local contentHeight = math.abs(yOffset) + CONFIG.spacing.topMargin
+	panel:SetHeight(contentHeight)
+
+	-- CRITICAL: Set parent (statsFrame) height to match content
+	-- Without this, statsFrame has height=0 and nothing is visible!
+	parent:SetHeight(contentHeight)
+
+	-- Make sure panel is shown (needed for animation)
+	panel:Show()
+
+	print(string.format("[StatsPanel] Panel created: width=%.0f, height=%.0f, alpha=%.2f, shown=%s",
+		panel:GetWidth(), contentHeight, panel:GetAlpha(), tostring(panel:IsShown())))
+	print(string.format("[StatsPanel] Parent frame: width=%.0f, height=%.0f",
+		parent:GetWidth(), parent:GetHeight()))
 
 	-- Initial update
 	UpdateStats(panel)

@@ -173,16 +173,22 @@ end
 
 -- Profile: Panel/Window (fade in only, no slide)
 function AnimationManager:AnimatePanel(frame, config)
-	if not frame then return end
+	if not frame then
+		print("[AnimationManager] AnimatePanel: frame is nil!")
+		return
+	end
 
 	-- Don't re-animate if already visible
 	if self:GetState(frame) == STATE.VISIBLE then
+		print("[AnimationManager] AnimatePanel: frame already visible, skipping")
 		return
 	end
 
 	config = config or {}
 	local duration = config.duration or 0.5
 	local delay = config.delay or 0
+
+	print(string.format("[AnimationManager] AnimatePanel: duration=%.2f, delay=%.2f", duration, delay))
 
 	-- Reset frame first
 	self:ResetFrame(frame)
@@ -192,6 +198,7 @@ function AnimationManager:AnimatePanel(frame, config)
 		frame,
 		duration,
 		function()
+			print("[AnimationManager] AnimatePanel: FadeIn complete")
 			self:SetState(frame, STATE.VISIBLE)
 		end,
 		delay
@@ -314,10 +321,13 @@ function AnimationManager:AnimateEquipmentTab(mainFrame)
 
 	-- Animate stats panel: fade in only
 	if mainFrame.statsFrame then
+		print("[AnimationManager] Animating stats panel")
 		self:AnimatePanel(mainFrame.statsFrame, {
 			duration = CONFIG.panels.duration,
 			delay = CONFIG.panels.delay,
 		})
+	else
+		print("[AnimationManager] WARNING: mainFrame.statsFrame is nil!")
 	end
 end
 
